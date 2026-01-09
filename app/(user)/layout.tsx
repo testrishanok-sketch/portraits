@@ -25,7 +25,7 @@ export default function UserLayout({
                 <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-center relative">
                     <div className="flex items-center gap-2 font-bold tracking-wider">
                         <Camera className="w-5 h-5 text-purple-400" />
-                        <span>EVENTCAM</span>
+                        <span>portraits.in</span>
                     </div>
                 </div>
             </header>

@@ -59,17 +59,40 @@ export default function GalleryPage({ params }: { params: Promise<{ id: string }
                 <div className="w-6" />
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-8">
                 {photos.map((src, i) => (
-                    <div key={i} className="group relative bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 shadow-lg">
-                        <img src={src} className="w-full h-auto" />
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 flex justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="p-2 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 text-white">
-                                <Share2 className="w-5 h-5" />
-                            </button>
-                            <button className="px-4 py-2 bg-white text-black font-bold rounded-full flex items-center gap-2 hover:bg-gray-200">
-                                <Download className="w-4 h-4" />
+                    <div key={i} className="flex flex-col gap-3">
+                        {/* Image Card */}
+                        <div className="relative group bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl aspect-[3/4]">
+                            <img src={src} className="w-full h-full object-cover" alt="Your matching photo" />
+                        </div>
+
+                        {/* Action Buttons (Always Visible) */}
+                        <div className="flex gap-2">
+                            <a
+                                href={src}
+                                download={`event-photo-${i}.jpg`}
+                                className="flex-1 bg-white text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 active:scale-95 transition-all shadow-lg"
+                            >
+                                <Download className="w-5 h-5" />
                                 Download
+                            </a>
+                            <button
+                                onClick={() => {
+                                    if (navigator.share) {
+                                        navigator.share({
+                                            title: 'My Event Photo',
+                                            text: 'Check out my photo from portraits.in!',
+                                            url: src
+                                        }).catch(console.error);
+                                    } else {
+                                        navigator.clipboard.writeText(src);
+                                        alert("Link copied!");
+                                    }
+                                }}
+                                className="w-12 bg-neutral-800 text-white rounded-xl flex items-center justify-center hover:bg-neutral-700 active:scale-95 transition-all"
+                            >
+                                <Share2 className="w-5 h-5" />
                             </button>
                         </div>
                     </div>

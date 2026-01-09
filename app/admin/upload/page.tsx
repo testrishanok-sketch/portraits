@@ -7,15 +7,24 @@ import { cn } from "@/lib/utils";
 import * as faceAI from "@/lib/face-recognition";
 import { supabase } from "@/lib/supabase";
 
-export default function UploadPage() {
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+
+// Sub-component that uses useSearchParams
+function UploadContent() {
+    const searchParams = useSearchParams();
+    const eventIdParam = searchParams.get('id');
+
+    // Use query param OR fallback to Demo ID (for backward compatibility during dev)
+    const EVENT_ID = eventIdParam || 'e0e0e0e0-e0e0-e0e0-e0e0-e0e0e0e0e0e0';
+
     const [files, setFiles] = useState<File[]>([]);
     const [uploading, setUploading] = useState(false);
     const [modelLoading, setModelLoading] = useState(true);
     const [progress, setProgress] = useState(0);
     const [statusText, setStatusText] = useState("Initializing AI...");
 
-    // Hardcoded 'Demo Event' ID for the prototype.
-    const EVENT_ID = 'e0e0e0e0-e0e0-e0e0-e0e0-e0e0e0e0e0e0';
+
 
     // 1. Ensure the Event exists in DB on load (Fixes Foreign Key Error)
     useEffect(() => {
@@ -31,7 +40,7 @@ export default function UploadPage() {
             }
         };
         checkEvent();
-    }, []);
+    }, [EVENT_ID]);
 
     // 2. Load models
     useEffect(() => {
@@ -94,9 +103,8 @@ export default function UploadPage() {
         const total = files.length;
         let processed = 0;
 
-        // Hardcoded 'Demo Event' ID for the prototype.
-        // In a real app, this would come from the URL params.
-        const EVENT_ID = 'e0e0e0e0-e0e0-e0e0-e0e0-e0e0e0e0e0e0';
+        // Use the outer EVENT_ID (from params)
+        // const EVENT_ID = ... (removed)
 
         for (const file of files) {
             setStatusText(`Processing ${file.name}...`);
@@ -160,7 +168,7 @@ export default function UploadPage() {
             <div className="flex justify-between items-start">
                 <div>
                     <h1 className="text-3xl font-bold">Upload Photos</h1>
-                    <p className="text-gray-400 mt-2">Add photos to the current event bucket.</p>
+                    <p className="text-gray-400 mt-2">Adding to Event ID: <span className="font-mono text-purple-400">{EVENT_ID.slice(0, 8)}...</span></p>
                 </div>
                 <div className={cn("px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2", modelLoading ? "bg-yellow-500/10 text-yellow-500" : "bg-green-500/10 text-green-500")}>
                     <BrainCircuit className="w-4 h-4" />
@@ -232,5 +240,14 @@ export default function UploadPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+// Default export wrapping in Suspense
+export default function UploadPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-500">Loading Upload Tool...</div>}>
+            <UploadContent />
+        </Suspense>
     );
 }

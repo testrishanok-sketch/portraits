@@ -69,7 +69,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="p-6 flex-1 flex flex-col justify-end">
                             <div className="flex gap-2">
-                                <Link href="/admin/upload" className="flex-1 bg-neutral-800 hover:bg-neutral-700 py-2 rounded-lg text-sm font-medium transition-colors text-center">
+                                <Link href={`/admin/upload?id=${event.id}`} className="flex-1 bg-neutral-800 hover:bg-neutral-700 py-2 rounded-lg text-sm font-medium transition-colors text-center">
                                     Manage Photos
                                 </Link>
                                 <Link href={`/event/${event.id}`} target="_blank" className="flex-1 bg-white/10 hover:bg-white/20 py-2 rounded-lg text-sm font-medium transition-colors backdrop-blur-sm text-center flex items-center justify-center gap-1">

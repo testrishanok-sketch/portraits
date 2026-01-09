@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 export default function NewEventPage() {
     const router = useRouter();
@@ -13,11 +14,27 @@ export default function NewEventPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        // TODO: Connect to Supabase to create event
-        setTimeout(() => {
+
+        // Generate a simple slug
+        // @ts-ignore
+        const name = e.target[0].value;
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random() * 1000);
+
+        const { data, error } = await supabase
+            .from('events')
+            .insert({ name, slug })
+            .select()
+            .single();
+
+        if (error) {
+            console.error(error);
+            alert("Error creating event");
             setLoading(false);
-            router.push("/admin/upload");
-        }, 1000);
+            return;
+        }
+
+        // Redirect to Upload page with the new Event ID
+        router.push(`/admin/upload?id=${data.id}`);
     };
 
     return (
