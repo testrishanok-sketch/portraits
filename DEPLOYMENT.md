@@ -55,23 +55,30 @@ create policy "Public Insert" on faces for insert with check (true);
     *   Project URL
     *   `anon` public key
 
-## 2. Vercel Deployment (The App)
+## 2. Vercel Deployment (Easiest Method - No Git)
 
-1.  **Push to GitHub**:
-    *   Create a new repository on GitHub.
-    *   Run:
-        ```bash
-        git remote add origin https://github.com/YOUR_USERNAME/eventcam.git
-        git push -u origin main
-        ```
+You can deploy directly from your laptop without using GitHub.
 
-2.  **Deploy on Vercel**:
-    *   Go to [vercel.com/new](https://vercel.com/new).
-    *   Import your `eventcam` repository.
-    *   **Environment Variables**: Add the keys from Supabase:
-        *   `NEXT_PUBLIC_SUPABASE_URL`: (Your URL)
-        *   `NEXT_PUBLIC_SUPABASE_ANON_KEY`: (Your Key)
-    *   Click **Deploy**.
+1.  **Open Terminal**: Inside your `camera` folder.
+2.  **Run Command**:
+    ```bash
+    npx vercel
+    ```
+3.  **Answer Questions**:
+    *   Set up and deploy? **Y**
+    *   Which scope? **(Select your account)**
+    *   Link to existing project? **N**
+    *   Project Name? **eventcam**
+    *   Directory? **./** (Just hit Enter)
+    *   Modify settings? **N**
+
+4.  **Add Keys (One time)**:
+    *   Go to the Vercel Dashboard (website).
+    *   Find your project -> Settings -> Environment Variables.
+    *   Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+    *   **Redeploy**: Back in terminal, run `npx vercel --prod`.
+
+*(Alternative: You can use Git if you prefer, but the command above is faster for today.)*
 
 ## 🛡️ Security & Keys (IMPORTANT)
 *   **Do NOT share your keys with anyone** (including me/AI).
