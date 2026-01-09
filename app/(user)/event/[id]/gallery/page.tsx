@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Confetti from "react-confetti";
 import { Download, Share2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function GalleryPage({ params }: { params: { id: string } }) {
+export default function GalleryPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
     const [width, setWidth] = useState(0);
     const [height, setHeight] = useState(0);
 
@@ -15,19 +16,43 @@ export default function GalleryPage({ params }: { params: { id: string } }) {
         setHeight(window.innerHeight);
     }, []);
 
-    // Mock matched photos
-    const photos = [
-        "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1511285560982-1351cdeb9821?auto=format&fit=crop&q=80&w=800"
-    ];
+    const [photos, setPhotos] = useState<string[]>([]);
+
+    useEffect(() => {
+        setWidth(window.innerWidth);
+        setHeight(window.innerHeight);
+
+        // Load matches from Scan Page
+        const storedMatches = localStorage.getItem('matched_photos');
+        if (storedMatches) {
+            try {
+                const parsed = JSON.parse(storedMatches);
+                setPhotos(parsed);
+            } catch (e) {
+                console.error("Failed to parse matches", e);
+            }
+        }
+    }, []);
+
+    if (photos.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
+                <div className="text-6xl">😕</div>
+                <h2 className="text-xl font-bold">No photos found yet.</h2>
+                <p className="text-gray-400 max-w-xs">We couldn't find a match in the current uploads. Try scanning again later!</p>
+                <Link href={`/event/${id}/scan`} className="bg-white text-black px-6 py-3 rounded-full font-bold">
+                    Scan Again
+                </Link>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
             <Confetti width={width} height={height} numberOfPieces={200} recycle={false} />
 
             <div className="flex items-center justify-between">
-                <Link href={`/event/${params.id}`} className="text-gray-400 hover:text-white">
+                <Link href={`/event/${id}`} className="text-gray-400 hover:text-white">
                     <ArrowLeft className="w-6 h-6" />
                 </Link>
                 <h1 className="text-xl font-bold">3 Photos Found!</h1>
@@ -52,7 +77,7 @@ export default function GalleryPage({ params }: { params: { id: string } }) {
             </div>
 
             <div className="text-center pt-8">
-                <p className="text-gray-500 text-sm">Not you? <Link href={`/event/${params.id}/scan`} className="text-purple-400 underline">Try scanning again</Link></p>
+                <p className="text-gray-500 text-sm">Not you? <Link href={`/event/${id}/scan`} className="text-purple-400 underline">Try scanning again</Link></p>
             </div>
         </div>
     );

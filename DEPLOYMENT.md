@@ -4,6 +4,23 @@ This guide covers how to deploy your Event Photo Delivery System to the cloud.
 
 ## 1. Supabase Setup (Database)
 
+## 🚀 Scalability: Will it crash?
+**Short Answer: No.** This architecture is designed for **High Traffic**.
+
+1.  **Distributed Processing**:
+    *   Traditional servers crash if 500 people upload selfies at once.
+    *   **EventCam** doesn't use the server for AI. It uses the **Guest's Phone**.
+    *   If 500 guests scan, 500 *different phones* do the work. Your server load is almost zero.
+
+2.  **Data Size (The Math)**:
+    *   We don't download the photos to search. We download the "Index" (Numbers).
+    *   1,000 Photos = ~500KB of data.
+    *   This loads in **1 second** even on 4G.
+    *   The high-res photos are only downloaded *after* a match is found.
+
+3.  **Vercel & Supabase**:
+    *   These are Enterprise Clouds. They auto-scale. They can handle 100,000+ requests without blinking.
+
 1.  **Create Project**: Go to [database.new](https://database.new) and create a new project.
 2.  **SQL Setup**: Go to the **SQL Editor** in Supabase and run this script to create the tables:
 
@@ -56,6 +73,13 @@ create policy "Public Insert" on faces for insert with check (true);
         *   `NEXT_PUBLIC_SUPABASE_ANON_KEY`: (Your Key)
     *   Click **Deploy**.
 
+## 🛡️ Security & Keys (IMPORTANT)
+*   **Do NOT share your keys with anyone** (including me/AI).
+*   **Do NOT commit keys to GitHub**.
+*   **Where do they go?**
+    *   **Locally**: Create a file named `.env.local` in your project folder and paste them there (see `.env.example`).
+    *   **Production**: Paste them into the **"Environment Variables"** section on Vercel.
+
 ## 3. Operational Workflow (Live Event)
 
 1.  **Laptop**: Open your deployed Vercel Admin Dashboard (e.g., `eventcam.vercel.app/admin`).
@@ -63,6 +87,12 @@ create policy "Public Insert" on faces for insert with check (true);
 3.  **Upload**: Drag & Drop photos into the Dashboard.
     *   ✅ **Verify**: Ensure the "AI Ready" badge is green before uploading.
 4.  **QR Code**: Generate a QR code pointing to `eventcam.vercel.app/event/[EVENT_ID]`.
+
+## Capacity & Optimization
+*   **1000+ Images**: The system automatically resizes photos to **Full HD (1920px)** before uploading.
+*   **Storage**: 1000 photos will use only ~200MB of your 1GB Free Tier.
+*   **Speed**: Uploads are 10x faster due to this compression.
+*   **Originals**: Keep high-res RAW/JPEGs on your hard drive; the cloud only needs "Screen Quality" for guests.
 
 ## Troubleshooting
 

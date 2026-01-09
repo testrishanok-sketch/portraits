@@ -1,13 +1,15 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
+import { useRef, useState, useCallback, useEffect, use } from "react";
 import Webcam from "react-webcam";
 import { useRouter } from "next/navigation";
 import { Camera, RefreshCw, Loader2, User } from "lucide-react";
 import * as faceAI from "@/lib/face-recognition";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
-export default function SelfieScanPage({ params }: { params: { id: string } }) {
+export default function SelfieScanPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
     const router = useRouter();
     const webcamRef = useRef<Webcam>(null);
     const [imgSrc, setImgSrc] = useState<string | null>(null);
@@ -45,14 +47,55 @@ export default function SelfieScanPage({ params }: { params: { id: string } }) {
                 return;
             }
 
-            setStatus("Face Found! Searching for matches...");
+            setStatus("Face Found! Searching database...");
 
-            // Mock query latency
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // 1. Fetch all face descriptors for this event
+            // 1. Fetch all face descriptors for this event
+            // Note: In this prototype, we use the Demo Event ID if id is '1'
+            const queryId = id === '1' ? 'e0e0e0e0-e0e0-e0e0-e0e0-e0e0e0e0e0e0' : id;
 
-            // Success - Redirect to Gallery with "mock" user ID or descriptor hash
-            // In real app, we'd pass the descriptor to Supabase RPC
-            router.push(`/event/${params.id}/gallery?match=true`);
+            const { data: faces, error } = await supabase
+                .from('faces')
+                .select('photo_url, descriptor')
+                .eq('event_id', queryId);
+
+            if (error || !faces) {
+                console.error(error);
+                setStatus("Error connecting to event database.");
+                setScanning(false);
+                return;
+            }
+
+            // 2. Client-side Matching
+            const matches: string[] = [];
+            // High threshold for loose matching, lower (e.g. 0.45) for strict
+            const THRESHOLD = 0.5;
+
+            // Convert the Float32Array from the selfie
+            const probe = descriptor;
+
+            for (const face of faces) {
+                // Convert database array back to Float32Array
+                const storedDescriptor = new Float32Array(face.descriptor);
+                const distance = faceAI.euclideanDistance(probe, storedDescriptor);
+
+                if (distance < THRESHOLD) {
+                    matches.push(face.photo_url);
+                }
+            }
+
+            // remove duplicates
+            const uniqueMatches = Array.from(new Set(matches));
+
+            if (uniqueMatches.length > 0) {
+                // Pass matches to gallery via URL or LocalStorage
+                // For simplicity, we use LocalStorage here to handle large lists
+                localStorage.setItem('matched_photos', JSON.stringify(uniqueMatches));
+                router.push(`/event/${id}/gallery?match=true`);
+            } else {
+                setStatus("No photos found matching you.");
+                setScanning(false);
+            }
 
         } catch (e) {
             console.error(e);

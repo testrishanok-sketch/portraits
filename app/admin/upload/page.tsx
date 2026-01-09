@@ -5,6 +5,7 @@ import { useDropzone } from "react-dropzone";
 import { Upload, FileImage, CheckCircle, Loader2, X, BrainCircuit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as faceAI from "@/lib/face-recognition";
+import { supabase } from "@/lib/supabase";
 
 export default function UploadPage() {
     const [files, setFiles] = useState<File[]>([]);
@@ -13,7 +14,26 @@ export default function UploadPage() {
     const [progress, setProgress] = useState(0);
     const [statusText, setStatusText] = useState("Initializing AI...");
 
-    // Load models on mount
+    // Hardcoded 'Demo Event' ID for the prototype.
+    const EVENT_ID = 'e0e0e0e0-e0e0-e0e0-e0e0-e0e0e0e0e0e0';
+
+    // 1. Ensure the Event exists in DB on load (Fixes Foreign Key Error)
+    useEffect(() => {
+        const checkEvent = async () => {
+            const { data } = await supabase.from('events').select('id').eq('id', EVENT_ID).single();
+            if (!data) {
+                console.log("Event missing, creating demo event...");
+                await supabase.from('events').insert({
+                    id: EVENT_ID,
+                    name: 'Demo Event',
+                    slug: 'demo'
+                });
+            }
+        };
+        checkEvent();
+    }, []);
+
+    // 2. Load models
     useEffect(() => {
         faceAI.loadModels().then(() => {
             setModelLoading(false);
@@ -74,29 +94,54 @@ export default function UploadPage() {
         const total = files.length;
         let processed = 0;
 
+        // Hardcoded 'Demo Event' ID for the prototype.
+        // In a real app, this would come from the URL params.
+        const EVENT_ID = 'e0e0e0e0-e0e0-e0e0-e0e0-e0e0e0e0e0e0';
+
         for (const file of files) {
             setStatusText(`Processing ${file.name}...`);
 
-            // 1. Create Image for Face Detection
             const img = document.createElement('img');
             img.src = URL.createObjectURL(file);
             await new Promise(r => img.onload = r);
 
             try {
-                // 2. Detect Faces (On Original for max accuracy)
+                // 1. Detect Faces
                 const faces = await faceAI.getAllFaces(img);
-                console.log(`Found ${faces.length} faces in ${file.name}`);
+                if (faces.length === 0) {
+                    console.log(`No faces in ${file.name}, skipping index.`);
+                    // Still upload photo? Maybe. For now, let's skip.
+                }
 
-                // 3. Resize for Storage (Save Bandwidth & Free Tier ID)
+                // 2. Resize
                 setStatusText(`Optimizing ${file.name}...`);
                 const resizedBlob = await resizeImage(file);
                 console.log(`Resized: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(resizedBlob.size / 1024 / 1024).toFixed(2)}MB`);
 
-                // 4. Upload to Supabase (TODO: Connect client)
-                // const { data } = await supabase.storage.from('events').upload(...)
+                // 3. Upload File to Supabase Storage
+                const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+                const { data: fileData, error: fileError } = await supabase.storage
+                    .from('events')
+                    .upload(`${EVENT_ID}/${fileName}`, resizedBlob);
+
+                if (fileError) throw fileError;
+
+                const photoUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/events/${EVENT_ID}/${fileName}`;
+
+                // 4. Save Face Descriptors to DB
+                for (const face of faces) {
+                    const { error: dbError } = await supabase
+                        .from('faces')
+                        .insert({
+                            event_id: EVENT_ID,
+                            photo_url: photoUrl,
+                            descriptor: Array.from(face.descriptor) // Convert Float32Array to standard Array
+                        });
+                    if (dbError) console.error('DB Error:', dbError);
+                }
 
             } catch (err) {
-                console.error(err);
+                console.error('Upload Failed:', err);
             }
 
             processed++;
@@ -107,7 +152,7 @@ export default function UploadPage() {
         setStatusText("All Completed!");
         setFiles([]);
         setTimeout(() => setStatusText("Ready to Index"), 2000);
-        alert("Upload & AI Indexing Complete!");
+        alert("Success! Photos uploaded and indexed.");
     };
 
     return (

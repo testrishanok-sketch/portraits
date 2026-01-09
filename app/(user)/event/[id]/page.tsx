@@ -1,9 +1,8 @@
-"use client";
-
 import Link from "next/link";
 import { Camera, ArrowRight } from "lucide-react";
 
-export default function EventLandingPage({ params }: { params: { id: string } }) {
+export default async function EventLandingPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     return (
         <div className="flex flex-col items-center justify-center min-h-[80vh] text-center space-y-8 animate-in fade-in duration-700">
 
@@ -24,7 +23,7 @@ export default function EventLandingPage({ params }: { params: { id: string } })
             </div>
 
             <Link
-                href={`/event/${params.id}/scan`}
+                href={`/event/${id}/scan`}
                 className="group relative w-full max-w-xs bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-200 transition-all hover:scale-105"
             >
                 <span>Find My Photos</span>

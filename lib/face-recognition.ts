@@ -16,6 +16,10 @@ export async function loadModels() {
     }
 }
 
+export function euclideanDistance(desc1: Float32Array, desc2: Float32Array): number {
+    return faceapi.euclideanDistance(desc1, desc2);
+}
+
 export async function getFaceDescriptor(imageElement: HTMLImageElement | HTMLVideoElement): Promise<Float32Array | undefined> {
     const detection = await faceapi
         .detectSingleFace(imageElement, new faceapi.TinyFaceDetectorOptions())
