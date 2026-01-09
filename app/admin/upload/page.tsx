@@ -11,22 +11,67 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 // Sub-component that uses useSearchParams
+
 function UploadContent() {
+
+    // ... Refactoring handleUpload to expose `uploadFile(file)` function ...
+
     const searchParams = useSearchParams();
     const eventIdParam = searchParams.get('id');
+    const [events, setEvents] = useState<any[]>([]);
 
-    // Use query param OR fallback to Demo ID (for backward compatibility during dev)
-    const EVENT_ID = eventIdParam || 'e0e0e0e0-e0e0-e0e0-e0e0-e0e0e0e0e0e0';
-
+    // State
     const [files, setFiles] = useState<File[]>([]);
     const [uploading, setUploading] = useState(false);
     const [modelLoading, setModelLoading] = useState(true);
     const [progress, setProgress] = useState(0);
     const [statusText, setStatusText] = useState("Initializing AI...");
 
+    // 1. If NO ID: Show Event Selector
+    useEffect(() => {
+        if (!eventIdParam) {
+            supabase.from('events').select('*').order('created_at', { ascending: false })
+                .then(({ data }) => setEvents(data || []));
+        }
+    }, [eventIdParam]);
 
+    if (!eventIdParam) {
+        return (
+            <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-500">
+                <div className="text-center">
+                    <h1 className="text-3xl font-bold mb-2">Select Event</h1>
+                    <p className="text-gray-400">Where do you want to upload photos?</p>
+                </div>
+                <div className="grid gap-4">
+                    {events.map(event => (
+                        <a href={`/admin/upload?id=${event.id}`} key={event.id} className="block p-6 bg-neutral-900 border border-neutral-800 rounded-2xl hover:bg-neutral-800 hover:border-purple-500/50 transition-all flex items-center justify-between group">
+                            <span className="font-semibold text-lg">{event.name}</span>
+                            <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                                <Upload className="w-4 h-4" />
+                            </div>
+                        </a>
+                    ))}
+                    {events.length === 0 && (
+                        <div className="text-center p-8 bg-neutral-900 rounded-2xl border border-dashed border-neutral-800">
+                            <p className="text-gray-500">No events found.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
-    // 1. Ensure the Event exists in DB on load (Fixes Foreign Key Error)
+    const EVENT_ID = eventIdParam;
+
+    // 2. Load models
+    useEffect(() => {
+        faceAI.loadModels().then(() => {
+            setModelLoading(false);
+            setStatusText("Ready to Index");
+        });
+    }, []);
+
+    // 3. Ensure the Event exists in DB on load (Fixes Foreign Key Error)
     useEffect(() => {
         const checkEvent = async () => {
             const { data } = await supabase.from('events').select('id').eq('id', EVENT_ID).single();
@@ -41,14 +86,6 @@ function UploadContent() {
         };
         checkEvent();
     }, [EVENT_ID]);
-
-    // 2. Load models
-    useEffect(() => {
-        faceAI.loadModels().then(() => {
-            setModelLoading(false);
-            setStatusText("Ready to Index");
-        });
-    }, []);
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         setFiles(prev => [...prev, ...acceptedFiles]);
@@ -96,71 +133,88 @@ function UploadContent() {
         });
     };
 
-    const handleUpload = async () => {
-        setUploading(true);
-        setProgress(0);
+    const [isLive, setIsLive] = useState(false);
+    const [processedFiles] = useState(new Set<string>());
+    const [liveLogs, setLiveLogs] = useState<string[]>([]);
 
-        const total = files.length;
-        let processed = 0;
-
-        // Use the outer EVENT_ID (from params)
-        // const EVENT_ID = ... (removed)
-
-        for (const file of files) {
+    // Core Upload Function (Reusable)
+    const uploadOneFile = async (file: File) => {
+        try {
             setStatusText(`Processing ${file.name}...`);
-
             const img = document.createElement('img');
             img.src = URL.createObjectURL(file);
             await new Promise(r => img.onload = r);
 
-            try {
-                // 1. Detect Faces
-                const faces = await faceAI.getAllFaces(img);
-                if (faces.length === 0) {
-                    console.log(`No faces in ${file.name}, skipping index.`);
-                    // Still upload photo? Maybe. For now, let's skip.
-                }
+            // 1. Detect Faces
+            const faces = await faceAI.getAllFaces(img);
 
-                // 2. Resize
-                setStatusText(`Optimizing ${file.name}...`);
-                const resizedBlob = await resizeImage(file);
-                console.log(`Resized: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(resizedBlob.size / 1024 / 1024).toFixed(2)}MB`);
+            // 2. Resize
+            const resizedBlob = await resizeImage(file);
 
-                // 3. Upload File to Supabase Storage
-                const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
-                const { data: fileData, error: fileError } = await supabase.storage
-                    .from('events')
-                    .upload(`${EVENT_ID}/${fileName}`, resizedBlob);
+            // 3. Upload to Storage
+            const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+            const { error: fileError } = await supabase.storage
+                .from('events')
+                .upload(`${EVENT_ID}/${fileName}`, resizedBlob);
 
-                if (fileError) throw fileError;
+            if (fileError) throw fileError;
 
-                const photoUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/events/${EVENT_ID}/${fileName}`;
+            const photoUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/events/${EVENT_ID}/${fileName}`;
 
-                // 4. Save Face Descriptors to DB
-                for (const face of faces) {
-                    const { error: dbError } = await supabase
-                        .from('faces')
-                        .insert({
-                            event_id: EVENT_ID,
-                            photo_url: photoUrl,
-                            descriptor: Array.from(face.descriptor) // Convert Float32Array to standard Array
-                        });
-                    if (dbError) console.error('DB Error:', dbError);
-                }
-
-            } catch (err) {
-                console.error('Upload Failed:', err);
+            // 4. Save to DB
+            for (const face of faces) {
+                await supabase.from('faces').insert({
+                    event_id: EVENT_ID,
+                    photo_url: photoUrl,
+                    descriptor: Array.from(face.descriptor)
+                });
             }
-
-            processed++;
-            setProgress(Math.round((processed / total) * 100));
+            return true;
+        } catch (e) {
+            console.error(e);
+            return false;
         }
+    };
 
+    // Live Directory Watcher
+    const startLiveSync = async () => {
+        try {
+            // @ts-ignore
+            const handle = await window.showDirectoryPicker();
+            setIsLive(true);
+            setLiveLogs(prev => [`📂 Watching folder: ${handle.name}`, ...prev]);
+
+            setInterval(async () => {
+                for await (const entry of handle.values()) {
+                    if (entry.kind === 'file' && !processedFiles.has(entry.name)) {
+                        const file = await entry.getFile();
+                        if (file.type.startsWith('image/')) {
+                            processedFiles.add(entry.name);
+                            setLiveLogs(prev => [`📸 Found: ${entry.name}`, ...prev]);
+                            await uploadOneFile(file);
+                            setLiveLogs(prev => [`✅ Uploaded: ${entry.name}`, ...prev]);
+                        }
+                    }
+                }
+            }, 3000);
+        } catch (e) {
+            console.error("Live Sync cancelled");
+        }
+    };
+
+    const handleUpload = async () => {
+        setUploading(true);
+        setProgress(0);
+        let processed = 0;
+        for (const file of files) {
+            await uploadOneFile(file);
+            processed++;
+            setProgress(Math.round((processed / files.length) * 100));
+        }
         setUploading(false);
-        setStatusText("All Completed!");
+        setStatusText("Completed!");
         setFiles([]);
-        setTimeout(() => setStatusText("Ready to Index"), 2000);
-        alert("Success! Photos uploaded and indexed.");
+        alert("Upload Done!");
     };
 
     return (
@@ -170,11 +224,32 @@ function UploadContent() {
                     <h1 className="text-3xl font-bold">Upload Photos</h1>
                     <p className="text-gray-400 mt-2">Adding to Event ID: <span className="font-mono text-purple-400">{EVENT_ID.slice(0, 8)}...</span></p>
                 </div>
-                <div className={cn("px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2", modelLoading ? "bg-yellow-500/10 text-yellow-500" : "bg-green-500/10 text-green-500")}>
-                    <BrainCircuit className="w-4 h-4" />
-                    {modelLoading ? "Loading AI Brain..." : "AI Ready"}
+                <div className="flex gap-2">
+                    <button
+                        onClick={startLiveSync}
+                        disabled={isLive || modelLoading}
+                        className={cn("px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all", isLive ? "bg-red-500/10 text-red-500 animate-pulse" : "bg-purple-500 text-white hover:bg-purple-600")}
+                    >
+                        <BrainCircuit className="w-4 h-4" />
+                        {isLive ? "Live Sync Active" : "Start Live Sync"}
+                    </button>
+                    {!isLive && (
+                        <div className={cn("px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2", modelLoading ? "bg-yellow-500/10 text-yellow-500" : "bg-green-500/10 text-green-500")}>
+                            {modelLoading ? "Loading AI..." : "AI Ready"}
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Live Logs */}
+            {isLive && (
+                <div className="bg-black border border-neutral-800 rounded-xl p-4 font-mono text-xs text-green-400 h-32 overflow-y-auto">
+                    {liveLogs.length === 0 && <p className="text-gray-500">Waiting for photos...</p>}
+                    {liveLogs.map((log, i) => (
+                        <div key={i}>{log}</div>
+                    ))}
+                </div>
+            )}
 
             {/* Dropzone */}
             <div

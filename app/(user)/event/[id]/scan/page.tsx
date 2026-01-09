@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback, useEffect, use } from "react";
 import Webcam from "react-webcam";
 import { useRouter } from "next/navigation";
-import { Camera, RefreshCw, Loader2, User } from "lucide-react";
+import { Camera, RefreshCw, Loader2, User, FlipHorizontal } from "lucide-react";
 import * as faceAI from "@/lib/face-recognition";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -16,6 +16,7 @@ export default function SelfieScanPage({ params }: { params: Promise<{ id: strin
     const [scanning, setScanning] = useState(false);
     const [status, setStatus] = useState("Align your face and take a photo");
     const [modelLoading, setModelLoading] = useState(true);
+    const [mirrored, setMirrored] = useState(true); // Default to mirrored
 
     useEffect(() => {
         faceAI.loadModels().then(() => setModelLoading(false));
@@ -49,7 +50,6 @@ export default function SelfieScanPage({ params }: { params: Promise<{ id: strin
 
             setStatus("Face Found! Searching database...");
 
-            // 1. Fetch all face descriptors for this event
             // 1. Fetch all face descriptors for this event
             // Note: In this prototype, we use the Demo Event ID if id is '1'
             const queryId = id === '1' ? 'e0e0e0e0-e0e0-e0e0-e0e0-e0e0e0e0e0e0' : id;
@@ -123,15 +123,27 @@ export default function SelfieScanPage({ params }: { params: Promise<{ id: strin
                 )}
 
                 {!imgSrc ? (
-                    <Webcam
-                        audio={false}
-                        ref={webcamRef}
-                        screenshotFormat="image/jpeg"
-                        videoConstraints={{ facingMode: "user" }}
-                        className="w-full h-full object-cover"
-                    />
+                    <>
+                        <Webcam
+                            audio={false}
+                            ref={webcamRef}
+                            mirrored={mirrored}
+                            screenshotFormat="image/jpeg"
+                            videoConstraints={{ facingMode: "user" }}
+                            className="w-full h-full object-cover"
+                        />
+                        {/* Mirror Toggle Button */}
+                        <div className="absolute top-4 right-4 z-10">
+                            <button
+                                onClick={() => setMirrored(!mirrored)}
+                                className="bg-black/50 p-2 rounded-full text-white hover:bg-black/70 transition-colors backdrop-blur-sm"
+                            >
+                                <FlipHorizontal className={cn("w-5 h-5 transition-transform", mirrored ? "text-purple-400" : "text-white")} />
+                            </button>
+                        </div>
+                    </>
                 ) : (
-                    <img src={imgSrc} alt="Selfie" className="w-full h-full object-cover" />
+                    <img src={imgSrc} alt="Selfie" className={cn("w-full h-full object-cover", mirrored && "scale-x-[-1]")} />
                 )}
 
                 {/* Overlay Guide */}
