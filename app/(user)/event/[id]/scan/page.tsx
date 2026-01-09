@@ -84,7 +84,7 @@ export default function SelfieScanPage({ params }: { params: Promise<{ id: strin
                 }
             }
 
-            // remove duplicates
+            // remove duplicates properly using Set
             const uniqueMatches = Array.from(new Set(matches));
 
             if (uniqueMatches.length > 0) {

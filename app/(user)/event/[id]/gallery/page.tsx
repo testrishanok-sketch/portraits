@@ -55,7 +55,7 @@ export default function GalleryPage({ params }: { params: Promise<{ id: string }
                 <Link href={`/event/${id}`} className="text-gray-400 hover:text-white">
                     <ArrowLeft className="w-6 h-6" />
                 </Link>
-                <h1 className="text-xl font-bold">3 Photos Found!</h1>
+                <h1 className="text-xl font-bold">{photos.length} Photo{photos.length !== 1 ? 's' : ''} Found!</h1>
                 <div className="w-6" />
             </div>
 
