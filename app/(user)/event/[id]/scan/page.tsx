@@ -112,13 +112,13 @@ export default function SelfieScanPage({ params }: { params: Promise<{ id: strin
 
     return (
         <div className="flex flex-col h-full min-h-[80vh] py-4">
-            <h1 className="text-xl font-bold text-center mb-6">Take a Selfie</h1>
+            <h1 className="text-xl font-bold text-center mb-6 text-neutral-900">Take a Selfie</h1>
 
-            <div className="relative aspect-[3/4] bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 mx-auto w-full max-w-sm">
+            <div className="relative aspect-[3/4] bg-neutral-100 rounded-2xl overflow-hidden shadow-2xl border border-neutral-200 mx-auto w-full max-w-sm">
                 {modelLoading && (
-                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
-                        <Loader2 className="w-10 h-10 animate-spin text-purple-500 mb-2" />
-                        <p className="text-sm">Loading Face AI...</p>
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+                        <Loader2 className="w-10 h-10 animate-spin text-black mb-2" />
+                        <p className="text-sm text-neutral-600">Loading Face AI...</p>
                     </div>
                 )}
 
@@ -136,9 +136,9 @@ export default function SelfieScanPage({ params }: { params: Promise<{ id: strin
                         <div className="absolute top-4 right-4 z-10">
                             <button
                                 onClick={() => setMirrored(!mirrored)}
-                                className="bg-black/50 p-2 rounded-full text-white hover:bg-black/70 transition-colors backdrop-blur-sm"
+                                className="bg-white/50 p-2 rounded-full text-black hover:bg-white/90 transition-colors backdrop-blur-sm shadow-sm"
                             >
-                                <FlipHorizontal className={cn("w-5 h-5 transition-transform", mirrored ? "text-purple-400" : "text-white")} />
+                                <FlipHorizontal className={cn("w-5 h-5 transition-transform", mirrored ? "text-purple-600" : "text-black")} />
                             </button>
                         </div>
                     </>
@@ -149,13 +149,13 @@ export default function SelfieScanPage({ params }: { params: Promise<{ id: strin
                 {/* Overlay Guide */}
                 {!imgSrc && (
                     <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                        <div className="w-48 h-64 border-2 border-purple-500/50 rounded-[40%] animate-pulse" />
+                        <div className="w-48 h-64 border-2 border-white/50 rounded-[40%] animate-pulse" />
                     </div>
                 )}
             </div>
 
             <div className="mt-8 text-center space-y-6">
-                <p className={cn("font-medium transition-colors", scanning ? "text-purple-400 animate-pulse" : "text-gray-400")}>
+                <p className={cn("font-medium transition-colors", scanning ? "text-purple-600 animate-pulse" : "text-neutral-500")}>
                     {status}
                 </p>
 
@@ -163,19 +163,19 @@ export default function SelfieScanPage({ params }: { params: Promise<{ id: strin
                     <button
                         onClick={capture}
                         disabled={modelLoading}
-                        className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto hover:bg-gray-200 active:scale-95 transition-all outline-4 outline-offset-4 outline-purple-500/0 hover:outline-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto hover:bg-neutral-800 active:scale-95 transition-all outline-4 outline-offset-4 outline-black/20 hover:outline-black/40 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <div className="w-16 h-16 border-4 border-black rounded-full" />
+                        <div className="w-16 h-16 border-4 border-white rounded-full" />
                     </button>
                 ) : (
                     <div className="flex justify-center gap-4">
                         {scanning ? (
-                            <div className="flex items-center gap-2 px-6 py-3 bg-neutral-800 rounded-full">
+                            <div className="flex items-center gap-2 px-6 py-3 bg-neutral-100 rounded-full text-black">
                                 <Loader2 className="w-5 h-5 animate-spin" />
                                 <span>Processing...</span>
                             </div>
                         ) : (
-                            <button onClick={retake} className="flex items-center gap-2 px-6 py-3 bg-neutral-800 hover:bg-neutral-700 rounded-full transition-colors">
+                            <button onClick={retake} className="flex items-center gap-2 px-6 py-3 bg-neutral-100 hover:bg-neutral-200 text-black rounded-full transition-colors border border-neutral-200">
                                 <RefreshCw className="w-4 h-4" />
                                 Retake
                             </button>

@@ -11,7 +11,7 @@ export const viewport: Viewport = {
     initialScale: 1,
     maximumScale: 1,
     userScalable: false, // Prevent zooming issues on input
-    themeColor: "#000000",
+    themeColor: "#ffffff",
 };
 
 export default function UserLayout({
@@ -20,12 +20,11 @@ export default function UserLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="min-h-screen bg-black text-white selection:bg-purple-500/30">
-            <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10 supports-[backdrop-filter]:bg-black/60">
+        <div className="min-h-screen bg-white text-neutral-900 selection:bg-purple-100">
+            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-neutral-100 supports-[backdrop-filter]:bg-white/60">
                 <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-center relative">
-                    <div className="flex items-center gap-2 font-bold tracking-wider">
-                        <Camera className="w-5 h-5 text-purple-400" />
-                        <span>portraits.in</span>
+                    <div className="flex items-center font-bold tracking-tighter text-black">
+                        <span className="font-[family-name:var(--font-outfit)] text-xl">portraits.in</span>
                     </div>
                 </div>
             </header>

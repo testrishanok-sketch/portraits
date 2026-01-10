@@ -52,10 +52,10 @@ export default function GalleryPage({ params }: { params: Promise<{ id: string }
             <Confetti width={width} height={height} numberOfPieces={200} recycle={false} />
 
             <div className="flex items-center justify-between">
-                <Link href={`/event/${id}`} className="text-gray-400 hover:text-white">
+                <Link href={`/event/${id}`} className="text-neutral-500 hover:text-black transition-colors">
                     <ArrowLeft className="w-6 h-6" />
                 </Link>
-                <h1 className="text-xl font-bold">{photos.length} Photo{photos.length !== 1 ? 's' : ''} Found!</h1>
+                <h1 className="text-xl font-bold text-black">{photos.length} Photo{photos.length !== 1 ? 's' : ''} Found!</h1>
                 <div className="w-6" />
             </div>
 
@@ -63,7 +63,7 @@ export default function GalleryPage({ params }: { params: Promise<{ id: string }
                 {photos.map((src, i) => (
                     <div key={i} className="flex flex-col gap-3">
                         {/* Image Card */}
-                        <div className="relative group bg-neutral-900 rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl aspect-[3/4]">
+                        <div className="relative group bg-white rounded-2xl overflow-hidden border border-neutral-100 shadow-xl aspect-[3/4]">
                             <img src={src} className="w-full h-full object-cover" alt="Your matching photo" />
                         </div>
 
@@ -72,7 +72,7 @@ export default function GalleryPage({ params }: { params: Promise<{ id: string }
                             <a
                                 href={src}
                                 download={`event-photo-${i}.jpg`}
-                                className="flex-1 bg-white text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 active:scale-95 transition-all shadow-lg"
+                                className="flex-1 bg-black text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-neutral-800 active:scale-95 transition-all shadow-lg"
                             >
                                 <Download className="w-5 h-5" />
                                 Download
@@ -90,7 +90,7 @@ export default function GalleryPage({ params }: { params: Promise<{ id: string }
                                         alert("Link copied!");
                                     }
                                 }}
-                                className="w-12 bg-neutral-800 text-white rounded-xl flex items-center justify-center hover:bg-neutral-700 active:scale-95 transition-all"
+                                className="w-14 bg-white border border-neutral-200 text-black rounded-xl flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all shadow-lg"
                             >
                                 <Share2 className="w-5 h-5" />
                             </button>
@@ -99,8 +99,19 @@ export default function GalleryPage({ params }: { params: Promise<{ id: string }
                 ))}
             </div>
 
-            <div className="text-center pt-8">
-                <p className="text-gray-500 text-sm">Not you? <Link href={`/event/${id}/scan`} className="text-purple-400 underline">Try scanning again</Link></p>
+            <div className="pt-12 space-y-8 pb-8">
+                <div className="text-center">
+                    <p className="text-neutral-500 text-sm">Not you? <Link href={`/event/${id}/scan`} className="text-purple-600 underline">Try scanning again</Link></p>
+                </div>
+
+                <div className="space-y-3">
+                    <p className="text-xs text-neutral-400 uppercase tracking-widest font-semibold text-center">
+                        Find your photos
+                    </p>
+                    <div className="flex items-center justify-center text-neutral-900">
+                        <span className="font-bold tracking-tighter font-[family-name:var(--font-outfit)]">portraits.in</span>
+                    </div>
+                </div>
             </div>
         </div>
     );
